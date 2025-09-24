@@ -1,7 +1,14 @@
 import "./App.css";
 import { Auth } from "./components/Auth";
-import { db } from "./config/firebase";
-import { getDocs, collection, addDoc } from "firebase/firestore";
+import { auth, db } from "./config/firebase";
+import {
+  getDocs,
+  collection,
+  addDoc,
+  deleteDoc,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 import { useState, useEffect } from "react";
 
 function App() {
@@ -24,6 +31,7 @@ function App() {
       setMovieList(filteredData);
     };
     getMoviesList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshMovies]); // Agora o useEffect roda quando refreshMovies muda
 
   const send = async () => {
@@ -32,12 +40,33 @@ function App() {
         Title: movieNewTitle,
         ReleaseDate: movieNewDateReleased,
         ReceivedAnOscar: movieNewReceivedAnOscar,
+        UserId: auth?.currentUser.uid,
       });
 
       // Força o useEffect a rodar novamente incrementando refreshMovies
       setRefreshMovies((prev) => prev + 1);
     } catch (err) {
       console.log(err);
+    }
+  };
+
+  const deleteMovie = async (id) => {
+    const movieRef = doc(db, "movies", id);
+    try {
+      await deleteDoc(movieRef);
+      setRefreshMovies((prev) => prev + 1);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const updateMovieTitle = async (id, title) => {
+    const movieRef = doc(db, "movies", id);
+    try {
+      await updateDoc(movieRef, { Title: title });
+      setRefreshMovies((prev) => prev + 1);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -51,6 +80,9 @@ function App() {
           </h1>
           <br></br>
           <p>{movie.ReleaseDate}</p>
+          <button onClick={() => deleteMovie(movie.id)}>Delete Movie</button>
+          <input type="text" placeholder="new Title" onChange={(e)=>setmovieNewTitle(e.target.value)}/>
+          <button onClick={()=>updateMovieTitle(movie.id, movieNewTitle)}>Update Title</button>
         </div>
       ))}
       <div>
